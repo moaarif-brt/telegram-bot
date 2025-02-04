@@ -1,0 +1,137 @@
+{% extends "bot/base.html" %}  
+
+{% block content %}
+<div class="mt-4">
+
+    {% if not user.is_authenticated %}
+        <script>
+            window.location.href = "{% url 'login' %}?next={{ request.path }}";
+        </script>
+    {% endif %}
+    {% if messages %}
+        <div aria-live="polite" aria-atomic="true" style="position: fixed; top: 20px; right: 20px; z-index: 1050;">
+            {% for message in messages %}
+                <div class="toast show align-items-center text-white bg-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% else %}info{% endif %} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            {{ message }}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    
+    <!-- Search Form -->
+    <div class="col-md-12">
+        <div class="d-flex justify-content-center mb-3 flex-column flex-sm-row">
+            <form method="GET" class="d-flex w-100 w-sm-75 mb-2 mb-sm-0">
+                <input type="text" name="q" class="border border-secondary rounded-left col-md-5 w-sm-auto" placeholder="Search by Token Name or Symbol" value="{{ query }}">
+                <button type="submit" class="border border-secondary  rounded-right  col-md-3 w-sm-auto">Search</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary  mx-2 col-md-2 w-sm-auto">Clear Filter</a>
+            </form>
+            <button class="btn btn-danger mx-2 col-md-2 w-sm-auto" data-toggle="modal" data-target="#createTokenModal">Add Token</button>  {# Create Token button triggers modal #}
+        </div>
+    </div>
+    
+    <!-- Token List Table -->
+    <div class=" table-responsive p-4">
+        {% if tokens %}
+            <table class="table table-striped text-center">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Name</th>
+                        <th>Exchange</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for token in tokens %}
+                    <tr>
+                        <td>{{ token.token_symbol }}</td>
+                        <td>{{ token.token_name }}</td>
+                        <td>{{ token.exchange }}</td>
+                        <td>{{ token.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <!-- Delete Button -->
+                            <button class="btn btn-danger" data-toggle="modal" data-target="#deleteModal{{ token.pk }}">Delete</button>
+                        </td>
+                    </tr>
+                    <!-- Delete Confirmation Modal -->
+                    <div class="modal fade" id="deleteModal{{ token.pk }}" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel{{ token.pk }}" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteModalLabel{{ token.pk }}">Confirm Delete</h5>
+                                </div>
+                                <div class="modal-body">
+                                    Are you sure you want to delete the token {{ token.token_name }} ({{ token.token_symbol }})?
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                    <form method="post" action="{% url 'delete_token' token.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+             <!-- Pagination Controls -->
+        <nav aria-label="Page navigation ">
+            <ul class="pagination justify-content-center">
+                {% if tokens.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ tokens.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">Previous</a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item disabled">
+                    <span class="page-link">Page {{ tokens.number }} of {{ tokens.paginator.num_pages }}</span>
+                </li>
+
+                {% if tokens.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ tokens.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ tokens.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}">Last</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% else %}
+            <p class="text-center text-muted">No tokens found.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create Token Modal -->
+<div class="modal fade" id="createTokenModal" tabindex="-1" role="dialog" aria-labelledby="createTokenModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTokenModalLabel">Add New Token</h5>
+            </div>
+            <div class="modal-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}  <!-- Form is passed to the context and rendered here -->
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Token</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

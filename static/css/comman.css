@@ -1,0 +1,145 @@
+/* Smooth gradient background and rounded navbar */
+body {
+    /* background: linear-gradient(to right, #74ebd5, #acb6e5);             */
+    height: 100vh;
+}
+
+
+.login-container {
+    background: linear-gradient(to right, #74ebd5, #acb6e5);            
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 400px;
+    text-align: left;
+}
+
+.navbar {
+    background: linear-gradient(to right, #74ebd5, #acb6e5);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Center logo and tweak navbar links */
+.navbar-brand {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: #fff !important;
+    transition: color 0.3s;
+}
+/* Ensure the table does not overflow on small screens */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Adjust table styles for better visibility on all screen sizes */
+.table {
+    /* background: linear-gradient(to right, #74ebd5, #acb6e5); */
+    /* border-radius: 25px !important; */
+    border-radius: 10px;
+    overflow: hidden;
+    color: black;
+}
+
+/* Ensure table text does not wrap awkwardly */
+.table th, .table td {
+    white-space: nowrap;
+    padding: 12px;
+    text-align: center;
+}
+.table tr{
+    border: 2px solid black !important;
+}
+/* Adjust font size and padding on smaller screens */
+@media (max-width: 768px) {
+    .table th, .table td {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    /* Make buttons and inputs fit smaller screens */
+    .btn-danger, .btn-secondary {
+        font-size: 12px;
+        padding: 8px 15px;
+    }
+
+    input[name="q"] {
+        width: 100%;
+    }
+
+    .pagination {
+        flex-wrap: wrap;
+    }
+}
+
+.navbar-brand:hover {
+    color: #f8f9fa !important;
+}
+
+.navbar-nav .nav-link {
+    color: #f8f9fa !important;
+    font-size: 1.1em;
+    margin-left: 15px;
+    transition: color 0.3s;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #FFD700 !important;
+    font-weight: bold;
+}
+
+.modal-dialog {
+    display: flex;
+    align-items: center;
+    min-height: 100vh; /* Ensures the modal stays centered vertically */
+}
+
+/* Adjust modal styles */
+.modal-content {
+    background: floralwhite;
+    border-radius: 10px;
+    margin: auto;
+}
+
+/* Transparent Button with Glossy Left-to-Right Hover Effect */
+.custom-page-link {
+    background: transparent !important;
+    border: 2px solid white !important;
+    color: white !important;
+    padding: 10px 20px;
+    border-radius: 25px;
+    position: relative; /* To allow positioning of the pseudo-element */
+    overflow: hidden; /* Prevents the glossy effect from spilling out of the button */
+    transition: transform 0.3s ease-in-out; /* Button scaling transition */
+}
+.btn-transparent {
+    background: linear-gradient(to right, #74ebd5, #acb6e5) !important;
+    border: 2px solid black !important;
+    color: white !important;
+    padding: 10px 20px;
+    border-radius: 25px;
+    position: relative; /* To allow positioning of the pseudo-element */
+    overflow: hidden; /* Prevents the glossy effect from spilling out of the button */
+    transition: transform 0.3s ease-in-out; /* Button scaling transition */
+}
+
+.btn-transparent:hover {
+    color: #357ABD !important;
+    transform: scale(1.05);
+}
+
+.btn-transparent::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%; /* Start off the button to the left */
+    width: 100%; /* Full width of the button */
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2); /* Glossy white overlay */
+    transition: left 0.4s ease-in-out; /* Transition for moving the glossy effect */
+}
+
+.btn-transparent:hover::after {
+    left: 0; /* Move the glossy effect from left to right */
+}
