@@ -18,6 +18,10 @@ logging.basicConfig(
 
 freq_in_mins = 5
 
+LEVERAGE = "cross (10x)"
+TP_RATIO = 1.015  # 1.5% take profit
+SL_RATIO = 0.985  # 1.5% stop loss
+
 def utctime():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -47,6 +51,49 @@ def get_data_with_backoff(tv_instance, symbol, max_retries=5, initial_delay=1, f
     logging.error(f"{symbol}: Cannot fetch data after {max_retries} attempts.")
     return None
 
+def format_symbol(symbol_name):
+    """Convert BINANCE:RSRUSDT.P to RSR/USDT"""
+    try:
+        exchange, token = symbol_name.split(':')
+        base = token.replace('USDT.P', '').replace('USDT', '')
+        return f"{base}/USDT"
+    except Exception as e:
+        logging.error(f"Error formatting symbol {symbol_name}: {e}")
+        return symbol_name  # fallback to original
+    
+def calculate_targets(close_price, decimal_places):
+    """Calculate TP/SL levels with proper decimal rounding"""
+    entry = round(close_price, decimal_places)
+    return {
+        'entry': [entry],
+        'tp': [
+            round(entry * TP_RATIO, decimal_places),
+            round(entry * TP_RATIO * 1.5, decimal_places)
+        ],
+        'sl': round(entry * SL_RATIO, decimal_places)
+    }
+    
+def create_signal_message(symbol_name, signal_type, close_price, decimal_places):
+    """Create formatted message with targets"""
+    formatted_symbol = format_symbol(symbol_name)
+    targets = calculate_targets(close_price, decimal_places)
+    
+    return (
+        f"⚡⚡ #{formatted_symbol} ⚡⚡\n\n"
+        f"Signal Type: {signal_type}\n"
+        f"Leverage: {LEVERAGE}\n\n"
+        "Entry Targets:\n"
+        f"1) {targets['entry'][0]}\n\n"
+        "Take-Profit Targets:\n"
+        f"1) {targets['tp'][0]}\n"
+        f"2) {targets['tp'][1]}\n\n"
+        "Stop Targets:\n"
+        f"1) {targets['sl']}\n\n"
+        "Trailing Configuration:\n"
+        "Stop: Moving Target - Trigger: Target (1)\n"
+        f"UTC: {utctime()}"
+    )
+    
 def get_symbols_from_db():
     """
     Fetch token symbols from the database dynamically.
@@ -154,20 +201,40 @@ def run_analysis():
         sellsignal1 = selllist[0] and not selllist[1] and trend == -1 and trend2 == -1
 
         if buysignal:
-            message = f"{symbol_name}: Buy Signal (15mins) - CMP: {close1[-1]}$ - UTC: {utctime()}"
+            message = create_signal_message(
+                symbol_name, 
+                "Regular (Long)", 
+                close1[-1],
+                decimal
+            )
             messages.append(message)
         if sellsignal:
-            message = f"{symbol_name}: Sell Signal (15mins) - CMP: {close1[-1]}$ - UTC: {utctime()}"
+            message = create_signal_message(
+                symbol_name, 
+                "Regular (Short)", 
+                close1[-1],
+                decimal
+            )
             messages.append(message)
         if buysignal1:
-            message = f"{symbol_name}: Compound Buy Signal (15mins) - CMP: {close1[-1]}$ - UTC: {utctime()}"
+            message = create_signal_message(
+                symbol_name, 
+                "Compound (Long)", 
+                close1[-1],
+                decimal
+            )
             messages.append(message)
         if sellsignal1:
-            message = f"{symbol_name}: Compound Sell Signal (15mins) - CMP: {close1[-1]}$ - UTC: {utctime()}"
+            message = create_signal_message(
+                symbol_name, 
+                "Compound (Short)", 
+                close1[-1],
+                decimal
+            )
             messages.append(message)
         else:
-            message = f"{symbol_name}:No Signal"
-            messages.append(message)
+            print("condition not met")
+
     return messages
 
 if __name__ == "__main__":

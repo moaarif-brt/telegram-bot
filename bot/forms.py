@@ -1,5 +1,37 @@
 from django import forms
 from .models import *
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
+class PasswordResetRequestForm(forms.Form):
+    email = forms.EmailField(
+        label="Enter your registered email",
+        max_length=254,
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Enter your email'})
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if not User.objects.filter(email=email).exists():
+            raise forms.ValidationError("This email is not registered.")
+        return email
+
+class SetNewPasswordForm(forms.Form):
+    new_password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter your New Password'}), label="New Password")
+    confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter your New Password again'}), label="Confirm Password")
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get("new_password")
+        confirm_password = cleaned_data.get("confirm_password")
+        
+        if new_password != confirm_password:
+            raise forms.ValidationError("Passwords do not match.")
+        return cleaned_data
+
+
 
 class LoginForm(forms.Form):
     identifier = forms.CharField(

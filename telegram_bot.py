@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 # Telegram Bot Configuration
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+BOT_OWNER_ID = os.getenv('BOT_OWNER_ID')  # Add this to your .env file
 
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 analyzer_running = False
@@ -48,9 +49,17 @@ def analyze_signals():
             logging.info("No signals detected.")
         time.sleep(300)  # Adjust timing as needed
 
+def is_owner(message):
+    return str(message.from_user.id) == BOT_OWNER_ID
+
 @bot.message_handler(commands=["start"])
 def start_analyzer(message):
     global analyzer_running, analyzer_thread
+
+    if not is_owner(message):
+        bot.reply_to(message, "You are not authorized to use this command.")
+        logging.warning(f"Unauthorized access attempt by user {message.from_user.id}")
+        return
 
     if analyzer_running:
         bot.reply_to(message, "Analyzer is already running!")
@@ -65,6 +74,11 @@ def start_analyzer(message):
 @bot.message_handler(commands=["stop"])
 def stop_analyzer(message):
     global analyzer_running
+
+    if not is_owner(message):
+        bot.reply_to(message, "You are not authorized to use this command.")
+        logging.warning(f"Unauthorized access attempt by user {message.from_user.id}")
+        return
 
     if not analyzer_running:
         bot.reply_to(message, "Analyzer is already stopped!")

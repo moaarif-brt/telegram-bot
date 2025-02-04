@@ -7,6 +7,11 @@ from django.shortcuts import render, redirect
 from django.views import View
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
+from django.utils.http import urlsafe_base64_encode,urlsafe_base64_decode
+from django.utils.encoding import force_bytes
 from .forms import *
 
 class LoginView(FormView):
@@ -97,3 +102,57 @@ class UserLogoutView(LoginRequiredMixin, View):
     def get(self, request):
         logout(request)
         return redirect('login')
+    
+User = get_user_model()
+
+def password_reset_request(request):
+    if request.method == "POST":
+        form = PasswordResetRequestForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            user = User.objects.get(email=email)
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+            reset_link = request.build_absolute_uri(
+                reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
+            )
+
+            # Send reset email
+            send_mail(
+                subject="Password Reset Request",
+                message=f"Click the link below to reset your password:\n{reset_link}",
+                from_email="noreply@ice-button.com",
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+            messages.success(request, "A password reset link has been sent to your email address.")
+            return redirect('login')
+    else:
+        form = PasswordResetRequestForm()
+    return render(request, 'auth/password_reset_request.html', {'form': form})
+
+def password_reset_confirm(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user and default_token_generator.check_token(user, token):
+        if request.method == "POST":
+            form = SetNewPasswordForm(request.POST)
+            if form.is_valid():
+                user.set_password(form.cleaned_data['new_password'])
+                user.save()
+                messages.success(request, "Your password has been reset successfully.")
+                return redirect('login')
+            else:
+                messages.error(request, "There was an error resetting your password. Please try again.")
+        else:
+            form = SetNewPasswordForm()
+
+        return render(request, 'auth/password_reset_confirm.html', {'form': form})
+    else:
+        return render(request, 'auth/password_reset_invalid.html')
+
