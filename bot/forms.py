@@ -55,7 +55,7 @@ class TokenForm(forms.ModelForm):
             'exchange': 'Exchange Platform',
         }
         widgets = {
-            'token_symbol': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., BTC'}),
-            'token_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Bitcoin'}),
-            'exchange': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Binance'}),
+            'token_symbol': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., BTC', 'style': 'text-transform: uppercase;'}),
+            'token_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Bitcoin', 'style': 'text-transform: uppercase;'}),
+            'exchange': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Binance', 'style': 'text-transform: uppercase;'}),
         }
