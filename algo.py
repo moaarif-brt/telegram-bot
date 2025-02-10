@@ -16,11 +16,10 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
-freq_in_mins = 5
+freq_in_mins = 15
 
 LEVERAGE = "cross (10x)"
-TP_RATIO = 1.015  # 1.5% take profit
-SL_RATIO = 0.985  # 1.5% stop loss
+RISK = "2%"
 
 def utctime():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
@@ -61,32 +60,59 @@ def format_symbol(symbol_name):
         logging.error(f"Error formatting symbol {symbol_name}: {e}")
         return symbol_name  # fallback to original
     
-def calculate_targets(close_price, decimal_places):
-    """Calculate TP/SL levels with proper decimal rounding"""
+def calculate_targets(close_price, decimal_places, ema200_value, signal_type):
+    """Calculate TP/SL levels based on signal type (long/short)"""
     entry = round(close_price, decimal_places)
+    sl_target = None
+    tp_ratio_percent = None
+
+    # Determine SL and TP ratio based on signal type
+    if "Long" in signal_type:
+        # Long trade: SL = EMA200 * 0.99
+        sl_target = round(ema200_value * 0.99, decimal_places)
+        tp_ratio_percent = (abs((sl_target / entry)-1))
+        tp_targets = [
+            round(entry * (1 + tp_ratio_percent), decimal_places),
+            round(entry * (1 + (tp_ratio_percent * 2)), decimal_places),
+            round(entry * (1 + (tp_ratio_percent * 3)), decimal_places),
+            round(entry * (1 + (tp_ratio_percent * 4)), decimal_places)
+        ]
+    else:
+        # Short trade: SL = EMA200 * 1.01
+        sl_target = round(ema200_value * 1.01, decimal_places)
+        tp_ratio_percent = (abs((sl_target / entry)-1)) 
+        tp_targets = [
+            round(entry * (1 - tp_ratio_percent), decimal_places),
+            round(entry * (1 - (tp_ratio_percent * 2)), decimal_places),
+            round(entry * (1 - (tp_ratio_percent * 3)), decimal_places),
+            round(entry * (1 - (tp_ratio_percent * 4)), decimal_places)
+        ]
+
     return {
         'entry': [entry],
-        'tp': [
-            round(entry * TP_RATIO, decimal_places),
-            round(entry * TP_RATIO * 1.5, decimal_places)
-        ],
-        'sl': round(entry * SL_RATIO, decimal_places)
+        'ema_200': ema200_value,
+        'tp': tp_targets,  # Now includes 4 targets
+        'sl': sl_target
     }
     
-def create_signal_message(symbol_name, signal_type, close_price, decimal_places):
+def create_signal_message(symbol_name, signal_type, close_price, decimal_places, ema200_value):
     """Create formatted message with targets"""
     formatted_symbol = format_symbol(symbol_name)
-    targets = calculate_targets(close_price, decimal_places)
+    targets = calculate_targets(close_price, decimal_places, ema200_value, signal_type)
     
     return (
         f"⚡⚡ #{formatted_symbol} ⚡⚡\n\n"
         f"Signal Type: {signal_type}\n"
-        f"Leverage: {LEVERAGE}\n\n"
+        f"Leverage: {LEVERAGE}\n"
+        f"RISK: {RISK}\n\n"
+        f"EMA Value: {targets['ema_200']}\n"
         "Entry Targets:\n"
         f"1) {targets['entry'][0]}\n\n"
         "Take-Profit Targets:\n"
         f"1) {targets['tp'][0]}\n"
-        f"2) {targets['tp'][1]}\n\n"
+        f"2) {targets['tp'][1]}\n"
+        f"3) {targets['tp'][2]}\n"
+        f"4) {targets['tp'][3]}\n\n"
         "Stop Targets:\n"
         f"1) {targets['sl']}\n\n"
         "Trailing Configuration:\n"
@@ -205,7 +231,8 @@ def run_analysis():
                 symbol_name, 
                 "Regular (Long)", 
                 close1[-1],
-                decimal
+                decimal,
+                ema200[-1]
             )
             messages.append(message)
         if sellsignal:
@@ -213,7 +240,8 @@ def run_analysis():
                 symbol_name, 
                 "Regular (Short)", 
                 close1[-1],
-                decimal
+                decimal,
+                ema200[-1]
             )
             messages.append(message)
         if buysignal1:
@@ -221,7 +249,8 @@ def run_analysis():
                 symbol_name, 
                 "Compound (Long)", 
                 close1[-1],
-                decimal
+                decimal,
+                ema200[-1]
             )
             messages.append(message)
         if sellsignal1:
@@ -229,11 +258,10 @@ def run_analysis():
                 symbol_name, 
                 "Compound (Short)", 
                 close1[-1],
-                decimal
+                decimal,
+                ema200[-1]
             )
             messages.append(message)
-        else:
-            print("condition not met")
 
     return messages
 
