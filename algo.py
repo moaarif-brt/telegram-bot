@@ -95,11 +95,25 @@ def calculate_targets(close_price, decimal_places, ema200_value, signal_type):
         'sl': sl_target
     }
     
+def format_target(value):
+    """
+    If the value has a non-zero digit before the decimal,
+    format it with 3 decimal places; otherwise, return its original string.
+    """
+    # We use abs() in case of negative numbers.
+    if int(abs(value)) != 0:
+        return f"{value:.3f}"
+    else:
+        return str(value)
+    
 def create_signal_message(symbol_name, signal_type, close_price, decimal_places, ema200_value):
     """Create formatted message with targets"""
     formatted_symbol = format_symbol(symbol_name)
     targets = calculate_targets(close_price, decimal_places, ema200_value, signal_type)
     
+    # Format the take-profit targets according to the rule.
+    tp_formatted = [format_target(tp) for tp in targets['tp']]
+    sl_formatted = format_target(targets['sl'])
     return (
         f"⚡⚡ #{formatted_symbol} ⚡⚡\n\n"
         f"Signal Type: {signal_type}\n"
@@ -109,12 +123,12 @@ def create_signal_message(symbol_name, signal_type, close_price, decimal_places,
         "Entry Targets:\n"
         f"1) {targets['entry'][0]}\n\n"
         "Take-Profit Targets:\n"
-        f"1) {targets['tp'][0]}\n"
-        f"2) {targets['tp'][1]}\n"
-        f"3) {targets['tp'][2]}\n"
-        f"4) {targets['tp'][3]}\n\n"
+        f"1) {tp_formatted[0]}\n"
+        f"2) {tp_formatted[1]}\n"
+        f"3) {tp_formatted[2]}\n"
+        f"4) {tp_formatted[3]}\n\n"
         "Stop Targets:\n"
-        f"1) {targets['sl']}\n\n"
+        f"1) {sl_formatted}\n\n"
         "Trailing Configuration:\n"
         "Stop: Moving Target - Trigger: Target (1)\n"
         f"UTC: {utctime()}"

@@ -47,7 +47,7 @@ def analyze_signals():
                 send_telegram_notification(msg)
         else:
             logging.info("No signals detected.")
-        time.sleep(300)  # Adjust timing as needed
+        time.sleep(900)  # Adjust timing as needed
 
 def is_owner(message):
     return str(message.from_user.id) == BOT_OWNER_ID
